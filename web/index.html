@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="demo_didong">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>demo_didong</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+   <script>
+  // Hàm OCR thông minh với color detection cải tiến
+  window.smartOcr = async function(imageDataUrl) {
+    try {
+      const result = await Tesseract.recognize(imageDataUrl, 'eng', {
+        logger: m => console.log(m)
+      });
+      
+      const words = result.data.words;
+      const image = new Image();
+      image.src = imageDataUrl;
+      await new Promise(resolve => image.onload = resolve);
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0);
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+      
+      // Với mỗi word, phân tích màu kỹ hơn
+      const wordsWithColor = words.map(w => {
+        const bbox = w.bbox;
+        
+        // Sample màu từ toàn bộ bounding box
+        let r = 0, g = 0, b = 0, count = 0;
+        let redPixels = 0, darkPixels = 0;
+        
+        for (let y = bbox.y0; y < bbox.y1 && y < canvas.height; y++) {
+          for (let x = bbox.x0; x < bbox.x1 && x < canvas.width; x++) {
+            const idx = (y * canvas.width + x) * 4;
+            const pixelR = pixels[idx];
+            const pixelG = pixels[idx + 1];
+            const pixelB = pixels[idx + 2];
+            const pixelA = pixels[idx + 3];
+            
+            // Bỏ qua pixel trong suốt hoặc trắng
+            if (pixelA < 128 || (pixelR > 240 && pixelG > 240 && pixelB > 240)) {
+              continue;
+            }
+            
+            r += pixelR;
+            g += pixelG;
+            b += pixelB;
+            count++;
+            
+            // Đếm pixel đỏ (R cao, G và B thấp)
+            if (pixelR > 180 && pixelG < 100 && pixelB < 100) {
+              redPixels++;
+            }
+            
+            // Đếm pixel tối (đen/xám đậm)
+            if (pixelR < 80 && pixelG < 80 && pixelB < 80) {
+              darkPixels++;
+            }
+          }
+        }
+        
+        if (count > 0) {
+          r = Math.floor(r / count);
+          g = Math.floor(g / count);
+          b = Math.floor(b / count);
+        }
+        
+        // Tính tỷ lệ pixel đỏ
+        const redRatio = count > 0 ? redPixels / count : 0;
+        const darkRatio = count > 0 ? darkPixels / count : 0;
+        
+        // Xác định có phải màu đỏ không (dựa trên nhiều yếu tố)
+        const isRed = redRatio > 0.3 || (r > 180 && g < 100 && b < 100);
+        const isDark = darkRatio > 0.5 || (r < 80 && g < 80 && b < 80);
+        
+        return {
+          text: w.text,
+          bbox: [bbox.x0, bbox.y0, bbox.x1, bbox.y1],
+          color: { r, g, b },
+          isRed: isRed,
+          isDark: isDark,
+          redRatio: redRatio,
+          confidence: w.confidence
+        };
+      });
+      
+      return {
+        text: result.data.text,
+        words: wordsWithColor,
+        success: true
+      };
+    } catch (e) {
+      return { text: '', words: [], success: false, error: e.toString() };
+    }
+  };
+</script>
+</body>
+</html>

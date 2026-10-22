@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "400504055931",
+    "firebase_url": "https://du-an-web-on-thi-tieng-anh-default-rtdb.firebaseio.com",
+    "project_id": "du-an-web-on-thi-tieng-anh",
+    "storage_bucket": "du-an-web-on-thi-tieng-anh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:400504055931:android:a5b235ebb05003c85a1ade",
+        "android_client_info": {
+          "package_name": "com.example.demo_didong"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_4s1CYGWo_apbv6Nkgv6O89H-67QsBgQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
